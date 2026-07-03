@@ -1,0 +1,212 @@
+﻿<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0f766e" />
+    <title>Seguimiento de Proyectos</title>
+    <link rel="icon" href="favicon.ico" sizes="any" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css?v=22" />
+  </head>
+  <body>
+    <section id="authView" class="auth-view">
+      <article class="auth-card">
+        <div class="auth-brand">
+          <span>SGI</span>
+          <div>
+            <p class="eyebrow">Acceso seguro</p>
+            <h1>Seguimiento de proyectos</h1>
+            <p>Control por roles, proyectos y entregables.</p>
+          </div>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <h2>Iniciar sesión</h2>
+          <label>Correo electrónico<input id="loginEmailInput" type="email" autocomplete="email" required /></label>
+          <label>Contraseña<input id="loginPasswordInput" type="password" autocomplete="current-password" required minlength="6" /></label>
+          <button class="primary">Entrar</button>
+          <p id="loginMessage" class="auth-message"></p>
+          <p class="auth-switch">¿No tienes cuenta? <button id="showRegisterButton" type="button">Agregar cuenta</button></p>
+        </form>
+
+        <form id="registerForm" class="auth-form" hidden>
+          <h2>Agregar cuenta</h2>
+          <label>Nombre<input id="registerNameInput" autocomplete="name" required maxlength="80" /></label>
+          <label>Correo electrónico<input id="registerEmailInput" type="email" autocomplete="email" required /></label>
+          <label>Contraseña<input id="registerPasswordInput" type="password" autocomplete="new-password" required minlength="6" /></label>
+          <button class="primary">Crear cuenta pendiente</button>
+          <p id="registerMessage" class="auth-message"></p>
+          <p class="auth-switch">¿Ya tienes cuenta? <button id="showLoginButton" type="button">Iniciar sesión</button></p>
+        </form>
+
+        <section id="pendingAccessPanel" class="pending-panel" hidden>
+          <p class="eyebrow">Cuenta pendiente</p>
+          <h2>Tu acceso está en revisión</h2>
+          <p>Un administrador debe activar tu usuario y asignarte rol antes de entrar al tablero.</p>
+          <button id="pendingSignOutButton" class="ghost" type="button">Cerrar sesión</button>
+        </section>
+      </article>
+    </section>
+
+    <div id="appShell" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <span>SGI</span>
+        <div>
+          <h1>Seguimiento de proyectos</h1>
+          <p>Proyecto → entregables → actividades</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span id="syncStatus" class="sync-status" data-tone="syncing">Conectando...</span>
+        <span id="currentUserLabel" class="user-chip"></span>
+        <button id="manageUsersButton" class="ghost" hidden>Usuarios</button>
+        <button id="signOutButton" class="ghost">Salir</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="project-crud-panel">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Proyectos</p>
+            <h2>Selecciona el proyecto de trabajo</h2>
+          </div>
+          <div class="crud-actions">
+            <button id="newProjectButton" class="primary">Nuevo proyecto</button>
+            <button id="editProjectButton" class="ghost" disabled>Editar proyecto</button>
+            <button id="deleteProjectButton" class="danger" disabled>Eliminar proyecto</button>
+          </div>
+        </div>
+        <div id="projectsGrid" class="projects-grid"></div>
+      </section>
+
+      <section class="overview-grid">
+        <article class="project-summary">
+          <div>
+            <p class="eyebrow">Proyecto activo</p>
+            <h2 id="projectName">Sin proyecto seleccionado</h2>
+            <p id="projectMeta">Crea o selecciona un proyecto para trabajar.</p>
+          </div>
+          <div class="project-progress">
+            <strong id="projectPercent">0%</strong>
+            <div class="track"><span id="projectProgressBar"></span></div>
+          </div>
+        </article>
+
+        <section class="metrics" aria-label="Indicadores">
+          <article><span id="deliverableTotal">0</span><p>Entregables</p></article>
+          <article><span id="deliverableDone">0</span><p>Completados</p></article>
+          <article><span id="activityDone">0/0</span><p>Actividades</p></article>
+          <article><span id="dueRisk">0</span><p>Riesgos</p></article>
+        </section>
+      </section>
+
+      <section class="control-panel" aria-label="Filtros y búsqueda">
+        <div class="filters">
+          <label>Estado<select id="statusFilter"></select></label>
+          <label>Prioridad<select id="priorityFilter"><option value="all">Todas</option><option>Alta</option><option>Media</option><option>Baja</option></select></label>
+          <label>Responsable<select id="ownerFilter"></select></label>
+          <label>Riesgo<select id="riskFilter"><option value="all">Todos</option><option value="overdue">Vencidos</option><option value="soon">Por vencer</option><option value="healthy">En tiempo</option><option value="none">Sin fecha</option></select></label>
+          <button id="clearFiltersButton" class="ghost">Limpiar</button>
+        </div>
+        <div class="search-panel">
+          <label>
+            Buscar
+            <input id="searchInput" type="search" placeholder="Buscar entregable, actividad, responsable..." />
+          </label>
+        </div>
+      </section>
+
+      <section class="board-head">
+        <h2>Entregables del proyecto</h2>
+        <button id="newDeliverableButton" class="primary" disabled>Nuevo entregable</button>
+      </section>
+      <section id="board" class="board" aria-label="Entregables del proyecto"></section>
+    </main>
+
+    <dialog id="projectDialog">
+      <form id="projectForm" method="dialog">
+        <div class="dialog-head"><h2 id="projectDialogTitle">Nuevo proyecto</h2><button type="button" id="closeProjectDialog">&times;</button></div>
+        <input id="projectIdInput" type="hidden" />
+        <label>Nombre del proyecto<input id="projectTitleInput" required maxlength="90" /></label>
+        <label>Cliente o &aacute;rea<input id="projectClientInput" maxlength="80" /></label>
+        <label id="projectLeaderField">Líder de proyecto<select id="projectLeaderInput"></select></label>
+        <label>Objetivo<textarea id="projectGoalInput" rows="3" maxlength="400"></textarea></label>
+        <section class="team-editor" aria-label="Equipo del proyecto">
+          <div class="team-entry">
+            <label>Equipo del proyecto<input id="teamMemberInput" maxlength="60" placeholder="Nombre del integrante" /></label>
+            <button id="addTeamMemberButton" type="button" class="ghost">Agregar</button>
+          </div>
+          <div id="teamList" class="team-list"></div>
+        </section>
+        <div class="dialog-actions"><span></span><button type="button" id="cancelProjectButton" class="ghost">Cancelar</button><button class="primary">Guardar proyecto</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="usersDialog">
+      <form id="usersForm" method="dialog">
+        <div class="dialog-head"><h2>Usuarios y roles</h2><button type="button" id="closeUsersDialog">&times;</button></div>
+        <p class="dialog-note">Solo Admin puede activar usuarios, cambiar roles y definir quién puede entrar al tablero.</p>
+        <div id="usersList" class="users-list"></div>
+        <div class="dialog-actions"><span></span><button type="button" id="cancelUsersButton" class="ghost">Cerrar</button><button class="primary">Guardar cambios</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="deliverableDialog">
+      <form id="deliverableForm" method="dialog">
+        <div class="dialog-head"><h2 id="deliverableDialogTitle">Nuevo entregable</h2><button type="button" id="closeDeliverableDialog">&times;</button></div>
+        <input id="deliverableId" type="hidden" />
+        <label>Entregable<input id="deliverableTitleInput" required maxlength="90" /></label>
+        <label>Descripci&oacute;n<textarea id="deliverableDescriptionInput" rows="3" maxlength="500"></textarea></label>
+        <div class="form-grid">
+          <label>Responsable<select id="deliverableOwnerInput"></select></label>
+          <label>Fecha compromiso<input id="deliverableDueInput" type="date" /></label>
+          <label>Prioridad<select id="deliverablePriorityInput"><option>Alta</option><option selected>Media</option><option>Baja</option></select></label>
+          <label>Estado<select id="deliverableStatusInput"></select></label>
+        </div>
+        <label>Etiquetas<input id="deliverableTagsInput" placeholder="Separadas por coma" maxlength="120" /></label>
+        <section class="activities-editor" aria-label="Actividades">
+          <div class="activity-entry">
+            <label>Actividad<input id="activityTextInput" maxlength="140" placeholder="Ej. Validar alcance" /></label>
+            <label>Responsable<select id="activityOwnerInput"></select></label>
+            <label>Fecha compromiso<input id="activityDueInput" type="date" /></label>
+            <button id="addActivityButton" type="button" class="ghost">Agregar</button>
+          </div>
+          <div id="activitiesList" class="activities-list"></div>
+        </section>
+        <div class="dialog-actions">
+          <button type="button" id="deleteDeliverableButton" class="danger" hidden>Eliminar</button>
+          <span></span>
+          <button type="button" id="cancelDeliverableButton" class="ghost">Cancelar</button>
+          <button class="primary">Guardar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <template id="columnTemplate">
+      <article class="column"><header><div><h2></h2><p></p></div><button class="add-card">+</button></header><div class="cards"></div></article>
+    </template>
+
+    <template id="cardTemplate">
+      <article class="card" draggable="true">
+        <div class="card-top"><span class="priority"></span><time></time></div>
+        <h3></h3>
+        <p class="description"></p>
+        <div class="activity-progress"><div><span class="activity-label"></span><strong class="activity-percent"></strong></div><div class="track"><span></span></div></div>
+        <ul class="activities-preview"></ul>
+        <div class="tags"></div>
+        <footer><span class="owner"></span><button type="button">Editar</button></footer>
+      </article>
+    </template>
+    </div>
+
+    <script type="module" src="app.js?v=22"></script>
+  </body>
+</html>
+
+
+
+
