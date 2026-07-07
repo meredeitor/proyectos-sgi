@@ -32,6 +32,7 @@ const state = {
   activeProjectId: "",
   search: "",
   filters: { status: "all", priority: "all", owner: "all", risk: "all" },
+  view: "kanban",
   ready: false,
 };
 
@@ -264,6 +265,8 @@ function render() {
   renderProjectSummary();
   renderMetrics();
   renderBoard();
+  renderGantt();
+  updateViewMode();
   updateCrudButtons();
 }
 
@@ -405,6 +408,96 @@ function renderCard(item) {
   return node;
 }
 
+function renderGantt() {
+  const gantt = $("#ganttView");
+  if (!gantt) return;
+  const project = activeProject();
+  const items = project ? filteredDeliverables() : [];
+  if (!project) {
+    gantt.innerHTML = '<p class="empty-state">Selecciona un proyecto para ver su Gantt.</p>';
+    return;
+  }
+  const dated = items.map((item) => {
+    const activityDates = item.activities.map((activity) => activity.due).filter(Boolean).sort();
+    const start = activityDates[0] || item.due || todayIso();
+    const end = item.due || activityDates[activityDates.length - 1] || start;
+    return { item, start, end: end < start ? start : end };
+  });
+  if (!dated.length) {
+    gantt.innerHTML = '<p class="empty-state">Este proyecto no tiene entregables para graficar.</p>';
+    return;
+  }
+  const minDate = dated.map((entry) => entry.start).sort()[0];
+  const maxDate = dated.map((entry) => entry.end).sort().at(-1);
+  const totalDays = Math.max(1, daysBetween(minDate, maxDate) + 1);
+  const ticks = buildGanttTicks(minDate, totalDays);
+  gantt.innerHTML = `
+    <div class="gantt-head">
+      <div><p class="eyebrow">Gantt</p><h3>${escapeHtml(project.title)}</h3></div>
+      <span>${formatDate(minDate)} - ${formatDate(maxDate)}</span>
+    </div>
+    <div class="gantt-scale">
+      <span>Entregable</span>
+      <div>${ticks.map((tick) => `<time style="left:${tick.left}%">${escapeHtml(tick.label)}</time>`).join("")}</div>
+    </div>
+    <div class="gantt-rows"></div>
+  `;
+  const rows = gantt.querySelector(".gantt-rows");
+  dated.forEach(({ item, start, end }) => {
+    const progress = activityProgress(item);
+    const left = (daysBetween(minDate, start) / totalDays) * 100;
+    const width = Math.max(4, ((daysBetween(start, end) + 1) / totalDays) * 100);
+    const row = document.createElement("article");
+    row.className = "gantt-row";
+    row.innerHTML = `
+      <div class="gantt-label">
+        <strong>${escapeHtml(item.title)}</strong>
+        <span>${escapeHtml(item.owner || "Sin responsable")} · ${progress.percent}%</span>
+      </div>
+      <div class="gantt-track">
+        <span class="gantt-bar" data-priority="${escapeHtml(item.priority)}" style="left:${left}%;width:${width}%"><i style="width:${progress.percent}%"></i></span>
+        ${item.activities.filter((activity) => activity.due).map((activity) => {
+          const markerLeft = (daysBetween(minDate, activity.due) / totalDays) * 100;
+          return `<span class="gantt-marker ${activity.done ? "is-done" : ""}" style="left:${markerLeft}%" title="${escapeHtml(activity.text)} - ${escapeHtml(activity.owner || "Sin responsable")}"></span>`;
+        }).join("")}
+      </div>
+    `;
+    rows.appendChild(row);
+  });
+}
+
+function updateViewMode() {
+  const isGantt = state.view === "gantt";
+  $("#board").hidden = isGantt;
+  $("#ganttView").hidden = !isGantt;
+  $("#kanbanViewButton").classList.toggle("is-active", !isGantt);
+  $("#ganttViewButton").classList.toggle("is-active", isGantt);
+}
+
+function setViewMode(view) {
+  state.view = view;
+  updateViewMode();
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function daysBetween(start, end) {
+  const a = new Date(`${start}T00:00:00`);
+  const b = new Date(`${end}T00:00:00`);
+  return Math.round((b - a) / 86400000);
+}
+
+function buildGanttTicks(start, totalDays) {
+  const count = Math.min(6, totalDays + 1);
+  return Array.from({ length: count }, (_, index) => {
+    const offset = Math.round((index / Math.max(1, count - 1)) * Math.max(0, totalDays - 1));
+    const date = new Date(`${start}T00:00:00`);
+    date.setDate(date.getDate() + offset);
+    return { left: (offset / totalDays) * 100, label: date.toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) };
+  });
+}
 function filteredDeliverables() {
   const project = activeProject();
   if (!project) return [];
@@ -643,6 +736,8 @@ columns.forEach((column) => {
 });
 
 $("#newProjectButton").addEventListener("click", () => openProjectDialog());
+$("#kanbanViewButton").addEventListener("click", () => setViewMode("kanban"));
+$("#ganttViewButton").addEventListener("click", () => setViewMode("gantt"));
 $("#editProjectButton").addEventListener("click", () => openProjectDialog(activeProject()));
 $("#deleteProjectButton").addEventListener("click", async () => {
   const project = activeProject();
@@ -787,6 +882,7 @@ onAuthStateChanged(auth, async (user) => {
   render();
   startFirestore();
 });
+
 
 
 

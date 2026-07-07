@@ -1,1 +1,16 @@
-﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#0f766e"/><path fill="#fff" d="M120 132h272v56H120zM120 228h116v56H120zM276 228h116v56H276zM120 324h272v56H120z"/><circle cx="148" cy="160" r="10" fill="#14b8a6"/><circle cx="304" cy="256" r="10" fill="#14b8a6"/><circle cx="148" cy="352" r="10" fill="#14b8a6"/></svg>
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="80" y1="40" x2="440" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b1220"/>
+      <stop offset="0.58" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#84cc16"/>
+    </linearGradient>
+    <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0b1220" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <path d="M118 344V158h58l80 105 80-105h58v186h-58V242l-62 79h-36l-62-79v102h-58Z" fill="#fff" filter="url(#s)"/>
+  <path d="M132 386h248" stroke="#d9f99d" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="386" cy="386" r="19" fill="#fff"/>
+</svg>

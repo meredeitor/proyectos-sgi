@@ -1,4 +1,4 @@
-﻿# Seguimiento de Proyectos PWA
+﻿# MereSoft Projects
 
 Flujo implementado:
 
@@ -10,7 +10,10 @@ Flujo implementado:
 6. Al completar todos los entregables se completa el proyecto.
 7. Cada proyecto tiene su propio equipo, y ese equipo alimenta los responsables.
 
-La app guarda datos en Firebase Firestore y funciona como PWA.
+MereSoft Projects guarda datos en Firebase Firestore y funciona como PWA.
+
+Marca: MereSoft Suite.
+Desarrollado por Hermenegildo Pérez.
 
 Autenticación y roles:
 
@@ -20,3 +23,5 @@ Autenticación y roles:
 - Estados disponibles: `pending`, `active`, `disabled`.
 - Los proyectos guardan `leaderEmail`; Admin ve todos y Líder de Proyecto solo ve los asignados a su correo.
 - La primera cuenta se crea como pendiente; se debe activar como Admin una vez desde Firebase Console.
+
+

@@ -3,22 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0f766e" />
-    <title>Seguimiento de Proyectos</title>
+    <meta name="theme-color" content="#0b1220" />
+    <title>MereSoft Projects</title>
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=22" />
+    <link rel="stylesheet" href="styles.css?v=26" />
   </head>
   <body>
     <section id="authView" class="auth-view">
       <article class="auth-card">
         <div class="auth-brand">
-          <span>SGI</span>
+          <span>MP</span>
           <div>
             <p class="eyebrow">Acceso seguro</p>
-            <h1>Seguimiento de proyectos</h1>
-            <p>Control por roles, proyectos y entregables.</p>
+            <h1>MereSoft Projects</h1>
+            <p>MereSoft Suite para controlar proyectos, entregables y actividades.</p>
           </div>
         </div>
 
@@ -53,10 +53,10 @@
     <div id="appShell" hidden>
     <header class="topbar">
       <div class="brand">
-        <span>SGI</span>
+        <span>MP</span>
         <div>
-          <h1>Seguimiento de proyectos</h1>
-          <p>Proyecto → entregables → actividades</p>
+          <h1>MereSoft Projects</h1>
+          <p>MereSoft Suite</p>
         </div>
       </div>
       <div class="top-actions">
@@ -120,11 +120,18 @@
         </div>
       </section>
 
-      <section class="board-head">
-        <h2>Entregables del proyecto</h2>
+            <section class="board-head">
+        <div>
+          <h2>Entregables del proyecto</h2>
+          <div class="view-tabs" role="tablist" aria-label="Vista del proyecto">
+            <button id="kanbanViewButton" type="button" class="view-tab is-active">Kanban</button>
+            <button id="ganttViewButton" type="button" class="view-tab">Gantt</button>
+          </div>
+        </div>
         <button id="newDeliverableButton" class="primary" disabled>Nuevo entregable</button>
       </section>
       <section id="board" class="board" aria-label="Entregables del proyecto"></section>
+      <section id="ganttView" class="gantt-view" aria-label="Diagrama de Gantt" hidden></section>
     </main>
 
     <dialog id="projectDialog">
@@ -203,9 +210,14 @@
     </template>
     </div>
 
-    <script type="module" src="app.js?v=22"></script>
+    <script type="module" src="app.js?v=26"></script>
+    <div class="brand-watermark" aria-hidden="true">MereSoft Suite: Desarrollado por Hermenegildo Pérez</div>
   </body>
 </html>
+
+
+
+
 
 
 
