@@ -16,6 +16,7 @@ const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 const projectsRef = collection(db, "projects");
 const usersRef = collection(db, "users");
+const appVersion = "27";
 
 const columns = [
   { id: "planned", title: "Planeado", hint: "Entregables definidos" },
@@ -48,6 +49,7 @@ const columnTemplate = $("#columnTemplate");
 const cardTemplate = $("#cardTemplate");
 const statusFilter = $("#statusFilter");
 const ownerFilter = $("#ownerFilter");
+const appVersionBadge = $("#appVersion");
 
 const roleLabels = { admin: "Admin", leader: "Lider de Proyecto" };
 const statusLabels = { pending: "Pendiente", active: "Activo", disabled: "Bloqueado" };
@@ -857,6 +859,7 @@ $("#deleteDeliverableButton").addEventListener("click", async () => {
   $("#deliverableDialog").close();
   render();
 });
+if (appVersionBadge) appVersionBadge.textContent = `v${appVersion}`;
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js"));
 
 showAuthMode("login");
@@ -882,6 +885,8 @@ onAuthStateChanged(auth, async (user) => {
   render();
   startFirestore();
 });
+
+
 
 
 
