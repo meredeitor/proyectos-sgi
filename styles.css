@@ -553,7 +553,7 @@ dialog form{display:grid;gap:12px;padding:18px;background:#fff}
 .gantt-marker{position:absolute;top:5px;width:8px;height:24px;border-radius:999px;background:#2563eb;transform:translateX(-50%);box-shadow:0 0 0 3px rgba(37,99,235,.14)}.gantt-marker.is-done{background:var(--brand);box-shadow:0 0 0 3px rgba(15,118,110,.14)}
 @media(max-width:640px){.view-tabs{width:100%;justify-content:center}.view-tab{flex:1}.gantt-view{padding:10px}}
 
-/* MereSoft branding */
+/* Caborca branding */
 .brand-watermark{position:fixed;right:18px;bottom:14px;z-index:20;pointer-events:none;color:rgba(11,18,32,.72);font-size:.78rem;font-weight:850;text-align:right;text-shadow:0 1px 0 rgba(255,255,255,.86);background:rgba(255,255,255,.72);border:1px solid rgba(228,231,236,.88);border-radius:999px;padding:7px 11px;backdrop-filter:blur(10px);box-shadow:0 10px 24px rgba(16,24,40,.08)}
 
 .auth-view:not([hidden])~.brand-watermark{color:rgba(255,255,255,.86);background:rgba(11,18,32,.38);border-color:rgba(255,255,255,.18);text-shadow:none}

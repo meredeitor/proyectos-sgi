@@ -16,7 +16,7 @@ const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 const projectsRef = collection(db, "projects");
 const usersRef = collection(db, "users");
-const appVersion = "27";
+const appVersion = "28";
 
 const columns = [
   { id: "planned", title: "Planeado", hint: "Entregables definidos" },
