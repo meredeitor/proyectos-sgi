@@ -10,7 +10,7 @@
     </filter>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#g)"/>
-  <path d="M118 344V158h58l80 105 80-105h58v186h-58V242l-62 79h-36l-62-79v102h-58Z" fill="#fff" filter="url(#s)"/>
+  <text x="256" y="318" text-anchor="middle" fill="#fff" filter="url(#s)" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="190" font-weight="900" letter-spacing="-10">CP</text>
   <path d="M132 386h248" stroke="#d9f99d" stroke-width="22" stroke-linecap="round"/>
   <circle cx="386" cy="386" r="19" fill="#fff"/>
 </svg>
