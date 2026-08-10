@@ -1,22 +1,5 @@
-﻿const cacheName = "caborca-projects-brand-v4";
-const assets = ["./", "./index.html", "./styles.css?v=28", "./app.js?v=28", "./manifest.webmanifest", "./icon.svg", "./favicon.ico"];
+const cacheName = "caborca-projects-brand-v7";
+const assets = ["./", "./index.html", "./styles.css?v=31", "./app.js?v=31", "./manifest.webmanifest", "./icon.svg", "./favicon.ico"];
 self.addEventListener("install", (event) => { self.skipWaiting(); event.waitUntil(caches.open(cacheName).then((cache) => cache.addAll(assets))); });
 self.addEventListener("activate", (event) => { event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== cacheName).map((key) => caches.delete(key)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", (event) => { if (event.request.method !== "GET") return; event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request))); });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

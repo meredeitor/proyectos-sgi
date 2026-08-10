@@ -16,7 +16,7 @@ const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 const projectsRef = collection(db, "projects");
 const usersRef = collection(db, "users");
-const appVersion = "28";
+const appVersion = "31";
 
 const columns = [
   { id: "planned", title: "Planeado", hint: "Entregables definidos" },
@@ -33,7 +33,7 @@ const state = {
   activeProjectId: "",
   search: "",
   filters: { status: "all", priority: "all", owner: "all", risk: "all" },
-  view: "kanban",
+  view: "table",
   ready: false,
 };
 
@@ -234,6 +234,11 @@ async function removeProject(id) {
 async function saveActiveProject() {
   const project = activeProject();
   if (!project) return;
+  await saveProjectDeliverables(project);
+}
+
+async function saveProjectDeliverables(project) {
+  if (!project) return;
   setSyncStatus("Guardando...", "syncing");
   await updateDoc(projectDoc(project.id), { deliverables: project.deliverables, updatedAt: serverTimestamp() });
   setSyncStatus("Sincronizado", "online");
@@ -262,14 +267,71 @@ function startFirestore() {
 }
 
 function render() {
+  renderMyWork();
   renderProjectsGrid();
   renderFilters();
   renderProjectSummary();
   renderMetrics();
   renderBoard();
+  renderTable();
   renderGantt();
   updateViewMode();
   updateCrudButtons();
+}
+
+function renderMyWork() {
+  const metrics = $("#myWorkMetrics");
+  const list = $("#myWorkList");
+  if (!metrics || !list) return;
+  const identities = [state.currentProfile?.name, state.currentProfile?.email, state.currentUser?.displayName, state.currentUser?.email]
+    .map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
+  const mine = (owner) => identities.includes(String(owner || "").trim().toLowerCase());
+  const entries = [];
+  state.projects.forEach((project) => project.deliverables.forEach((item) => {
+    if (mine(item.owner) && !isDeliverableDone(item)) entries.push({ type: "Entregable", project, item, activity: null, due: item.due });
+    item.activities.forEach((activity, index) => {
+      if (mine(activity.owner) && !activity.done) entries.push({ type: "Actividad", project, item, activity, index, due: activity.due || item.due });
+    });
+  }));
+  entries.sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999"));
+  const overdue = entries.filter((entry) => entry.due && new Date(`${entry.due}T00:00:00`) < new Date(new Date().setHours(0, 0, 0, 0))).length;
+  const soon = entries.filter((entry) => {
+    if (!entry.due) return false;
+    const days = daysBetween(todayIso(), entry.due);
+    return days >= 0 && days <= 7;
+  }).length;
+  metrics.innerHTML = `
+    <article><strong>${entries.length}</strong><span>Pendientes</span></article>
+    <article data-tone="danger"><strong>${overdue}</strong><span>Vencidos</span></article>
+    <article data-tone="soon"><strong>${soon}</strong><span>Próximos 7 días</span></article>
+    <article><strong>${new Set(entries.map((entry) => entry.project.id)).size}</strong><span>Proyectos activos</span></article>`;
+  $("#myWorkSummary").textContent = identities.length ? `Asignaciones de ${state.currentProfile?.name || state.currentUser?.email}.` : "Tus actividades y entregables pendientes.";
+  if (!entries.length) {
+    list.innerHTML = '<p class="my-work-empty">No tienes pendientes asignados con el nombre de tu perfil.</p>';
+    return;
+  }
+  list.innerHTML = entries.slice(0, 8).map((entry) => {
+    const title = entry.activity?.text || entry.item.title;
+    const risk = entry.due ? dueLabel(entry.due) : { state: "none", label: "Sin fecha" };
+    return `<button class="my-work-item" type="button" data-project="${escapeHtml(entry.project.id)}" data-item="${escapeHtml(entry.item.id)}">
+      <span class="my-work-kind" data-type="${entry.activity ? "activity" : "deliverable"}">${entry.activity ? "Actividad" : "Entregable"}</span>
+      <span class="my-work-copy"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(entry.project.title)} · ${escapeHtml(entry.item.title)}</small></span>
+      <time data-due="${escapeHtml(risk.state)}">${escapeHtml(risk.label)}</time>
+    </button>`;
+  }).join("");
+  list.querySelectorAll(".my-work-item").forEach((button) => button.addEventListener("click", () => {
+    state.activeProjectId = button.dataset.project;
+    state.view = "table";
+    render();
+    $("#tableView")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+}
+
+function dueLabel(value) {
+  const days = daysBetween(todayIso(), value);
+  if (days < 0) return { state: "overdue", label: `Vencido ${formatDate(value)}` };
+  if (days <= 7) return { state: "soon", label: days === 0 ? "Vence hoy" : `En ${days} días` };
+  return { state: "healthy", label: formatDate(value) };
 }
 
 function renderProjectsGrid() {
@@ -410,6 +472,121 @@ function renderCard(item) {
   return node;
 }
 
+function renderTable() {
+  const table = $("#tableView");
+  if (!table) return;
+  const project = activeProject();
+  const items = project ? filteredDeliverables() : [];
+  if (!project) {
+    table.innerHTML = '<p class="empty-state">Selecciona un proyecto para consultar su tabla principal.</p>';
+    return;
+  }
+  if (!items.length) {
+    table.innerHTML = '<p class="empty-state">No hay entregables que coincidan con los filtros.</p>';
+    return;
+  }
+  table.innerHTML = groupTableItems(items).map((group) => `
+    <section class="table-group" style="--group-color:${group.color}">
+      <div class="table-group-title"><h3>${escapeHtml(group.label)}</h3><span>${group.items.length} ${group.items.length === 1 ? "entregable" : "entregables"}</span></div>
+      <div class="work-table-wrap"><table class="work-table">
+        <thead><tr><th>Entregable</th><th>Responsable</th><th>Avance</th><th>Estado</th><th>Prioridad</th><th>Vencimiento</th><th><span class="sr-only">Acciones</span></th></tr></thead>
+        <tbody>${group.items.map(tableRowHtml).join("")}</tbody>
+      </table></div>
+    </section>`).join("");
+  table.querySelectorAll('[data-action="toggle-row"]').forEach((button) => button.addEventListener("click", () => {
+    const details = table.querySelector(`[data-details="${CSS.escape(button.dataset.id)}"]`);
+    const expanded = button.getAttribute("aria-expanded") === "true";
+    button.setAttribute("aria-expanded", String(!expanded));
+    button.textContent = expanded ? "+" : "−";
+    details.hidden = expanded;
+  }));
+  table.querySelectorAll('[data-action="edit-row"]').forEach((button) => button.addEventListener("click", () => {
+    const item = activeProject()?.deliverables.find((entry) => entry.id === button.dataset.id);
+    if (item) openDeliverableDialog(item);
+  }));
+  table.querySelectorAll('[data-action="inline-edit"]').forEach((control) => control.addEventListener("change", async () => {
+    const project = activeProject();
+    const item = project?.deliverables.find((entry) => entry.id === control.dataset.id);
+    if (!item) return;
+    control.disabled = true;
+    item[control.dataset.field] = control.value;
+    Object.assign(item, normalizeDeliverable(item));
+    try {
+      await saveProjectDeliverables(project);
+      render();
+    } catch (error) {
+      console.warn("No se pudo guardar la edición directa.", error);
+      setSyncStatus("Error al guardar", "local");
+      control.disabled = false;
+    }
+  }));
+  table.querySelectorAll('[data-action="toggle-activity"]').forEach((input) => input.addEventListener("change", async () => {
+    const item = activeProject()?.deliverables.find((entry) => entry.id === input.dataset.id);
+    const activity = item?.activities[Number(input.dataset.index)];
+    if (!activity) return;
+    activity.done = input.checked;
+    Object.assign(item, normalizeDeliverable(item));
+    await saveActiveProject();
+    render();
+  }));
+}
+
+function tableRowHtml(item) {
+  const progress = activityProgress(item);
+  const status = columns.find((column) => column.id === item.status) || columns[0];
+  const risk = dueState(item);
+  const project = activeProject();
+  const owners = normalizeTeam([...(project?.team || []), item.owner]);
+  const ownerOptions = ['<option value="">Sin responsable</option>', ...owners.map((owner) => `<option value="${escapeHtml(owner)}" ${owner === item.owner ? "selected" : ""}>${escapeHtml(owner)}</option>`)].join("");
+  const statusOptions = columns.map((column) => `<option value="${column.id}" ${column.id === item.status ? "selected" : ""}>${escapeHtml(column.title)}</option>`).join("");
+  const priorityOptions = ["Alta", "Media", "Baja"].map((priority) => `<option value="${priority}" ${priority === item.priority ? "selected" : ""}>${priority}</option>`).join("");
+  const activities = item.activities.length ? item.activities.map((activity, index) => `
+    <label class="table-activity ${activity.done ? "is-done" : ""}">
+      <input type="checkbox" data-action="toggle-activity" data-id="${escapeHtml(item.id)}" data-index="${index}" ${activity.done ? "checked" : ""}>
+      <span><strong>${escapeHtml(activity.text)}</strong><small>${escapeHtml([activity.owner || "Sin responsable", activity.due ? formatDate(activity.due) : "Sin fecha"].join(" · "))}</small></span>
+    </label>`).join("") : '<p class="table-no-activities">Sin actividades registradas.</p>';
+  return `
+    <tr class="deliverable-row" data-status="${escapeHtml(item.status)}">
+      <td><div class="deliverable-cell"><button class="row-toggle" type="button" data-action="toggle-row" data-id="${escapeHtml(item.id)}" aria-expanded="false" ${item.activities.length ? "" : "disabled"}>+</button><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.description || item.tags.join(" · ") || "Sin descripción")}</small></span></div></td>
+      <td><div class="inline-owner"><span class="owner-avatar">${escapeHtml(initials(item.owner))}</span><select class="inline-control" data-action="inline-edit" data-field="owner" data-id="${escapeHtml(item.id)}" aria-label="Responsable de ${escapeHtml(item.title)}">${ownerOptions}</select></div></td>
+      <td><div class="table-progress"><div class="track"><span style="width:${progress.percent}%"></span></div><strong>${progress.percent}%</strong></div></td>
+      <td class="status-cell" data-status="${escapeHtml(item.status)}"><select class="inline-control inline-status" data-action="inline-edit" data-field="status" data-id="${escapeHtml(item.id)}" aria-label="Estado de ${escapeHtml(item.title)}">${statusOptions}</select></td>
+      <td><select class="inline-control inline-priority" data-priority="${escapeHtml(item.priority)}" data-action="inline-edit" data-field="priority" data-id="${escapeHtml(item.id)}" aria-label="Prioridad de ${escapeHtml(item.title)}">${priorityOptions}</select></td>
+      <td><div class="inline-date"><input class="inline-control" type="date" value="${escapeHtml(item.due)}" data-action="inline-edit" data-field="due" data-id="${escapeHtml(item.id)}" aria-label="Vencimiento de ${escapeHtml(item.title)}"><small data-due="${escapeHtml(risk.state)}">${escapeHtml(risk.label)}</small></div></td>
+      <td><button class="row-edit" type="button" data-action="edit-row" data-id="${escapeHtml(item.id)}" aria-label="Editar ${escapeHtml(item.title)}">Editar</button></td>
+    </tr>
+    <tr class="activity-details" data-details="${escapeHtml(item.id)}" hidden><td colspan="7"><div class="table-activities">${activities}</div></td></tr>`;
+}
+
+function groupTableItems(items) {
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+  const definitions = [
+    { id: "overdue", label: "Vencidos", color: "#e5484d" },
+    { id: "current", label: "Este mes", color: "#4f8df7" },
+    { id: "next", label: "Próximo mes", color: "#8b5cf6" },
+    { id: "later", label: "Próximamente", color: "#13a880" },
+    { id: "none", label: "Sin fecha", color: "#98a2b3" },
+  ];
+  const buckets = Object.fromEntries(definitions.map((definition) => [definition.id, []]));
+  items.slice().sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")).forEach((item) => {
+    if (!item.due) return buckets.none.push(item);
+    const date = new Date(`${item.due}T00:00:00`);
+    const today = new Date(year, month, now.getDate());
+    if (!isDeliverableDone(item) && date < today) return buckets.overdue.push(item);
+    if (date.getFullYear() === year && date.getMonth() === month) return buckets.current.push(item);
+    const next = new Date(year, month + 1, 1);
+    if (date.getFullYear() === next.getFullYear() && date.getMonth() === next.getMonth()) return buckets.next.push(item);
+    buckets.later.push(item);
+  });
+  return definitions.filter((definition) => buckets[definition.id].length).map((definition) => ({ ...definition, items: buckets[definition.id] }));
+}
+
+function initials(value) {
+  return String(value || "?").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
+}
+
 function renderGantt() {
   const gantt = $("#ganttView");
   if (!gantt) return;
@@ -469,11 +646,12 @@ function renderGantt() {
 }
 
 function updateViewMode() {
-  const isGantt = state.view === "gantt";
-  $("#board").hidden = isGantt;
-  $("#ganttView").hidden = !isGantt;
-  $("#kanbanViewButton").classList.toggle("is-active", !isGantt);
-  $("#ganttViewButton").classList.toggle("is-active", isGantt);
+  $("#tableView").hidden = state.view !== "table";
+  $("#board").hidden = state.view !== "kanban";
+  $("#ganttView").hidden = state.view !== "gantt";
+  $("#tableViewButton").classList.toggle("is-active", state.view === "table");
+  $("#kanbanViewButton").classList.toggle("is-active", state.view === "kanban");
+  $("#ganttViewButton").classList.toggle("is-active", state.view === "gantt");
 }
 
 function setViewMode(view) {
@@ -738,6 +916,7 @@ columns.forEach((column) => {
 });
 
 $("#newProjectButton").addEventListener("click", () => openProjectDialog());
+$("#tableViewButton").addEventListener("click", () => setViewMode("table"));
 $("#kanbanViewButton").addEventListener("click", () => setViewMode("kanban"));
 $("#ganttViewButton").addEventListener("click", () => setViewMode("gantt"));
 $("#editProjectButton").addEventListener("click", () => openProjectDialog(activeProject()));

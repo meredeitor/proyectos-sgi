@@ -8,7 +8,7 @@
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=28" />
+    <link rel="stylesheet" href="styles.css?v=31" />
   </head>
   <body>
     <section id="authView" class="auth-view">
@@ -68,6 +68,14 @@
     </header>
 
     <main>
+      <section id="myWorkPanel" class="my-work-panel" aria-labelledby="myWorkTitle">
+        <div class="my-work-head">
+          <div><p class="eyebrow">Enfoque personal</p><h2 id="myWorkTitle">Mi trabajo</h2></div>
+          <p id="myWorkSummary">Tus actividades y entregables pendientes.</p>
+        </div>
+        <div id="myWorkMetrics" class="my-work-metrics"></div>
+        <div id="myWorkList" class="my-work-list"></div>
+      </section>
       <section class="project-crud-panel">
         <div class="section-title">
           <div>
@@ -122,15 +130,17 @@
 
             <section class="board-head">
         <div>
-          <h2>Entregables del proyecto</h2>
+          <h2>Plan de proyecto</h2>
           <div class="view-tabs" role="tablist" aria-label="Vista del proyecto">
-            <button id="kanbanViewButton" type="button" class="view-tab is-active">Kanban</button>
+            <button id="tableViewButton" type="button" class="view-tab is-active">Tabla principal</button>
             <button id="ganttViewButton" type="button" class="view-tab">Gantt</button>
+            <button id="kanbanViewButton" type="button" class="view-tab">Kanban</button>
           </div>
         </div>
         <button id="newDeliverableButton" class="primary" disabled>Nuevo entregable</button>
       </section>
-      <section id="board" class="board" aria-label="Entregables del proyecto"></section>
+      <section id="tableView" class="table-view" aria-label="Tabla principal del proyecto"></section>
+      <section id="board" class="board" aria-label="Entregables del proyecto" hidden></section>
       <section id="ganttView" class="gantt-view" aria-label="Diagrama de Gantt" hidden></section>
     </main>
 
@@ -210,8 +220,7 @@
     </template>
     </div>
 
-    <script type="module" src="app.js?v=28"></script>
-    <div class="brand-watermark" aria-hidden="true">Caborca Suite</div>
+    <script type="module" src="app.js?v=31"></script>
   </body>
 </html>
 
